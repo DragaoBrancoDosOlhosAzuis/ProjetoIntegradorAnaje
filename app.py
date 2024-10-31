@@ -86,15 +86,51 @@ def listar_clientes():
     clientes = db.search(Cliente.tipo == 'cliente')
     return jsonify(clientes), 200
 
+# Rota para editar cliente
+@app.route('/editar_cliente', methods=['POST'])
+def editar_cliente():
+    cpf_cnpj = request.form.get('cpf_cnpj')
+    nome = request.form.get('nome')
+    telefone = request.form.get('telefone')
+    email = request.form.get('email')
+
+    if cpf_cnpj:
+        Cliente = Query()
+        db.update({
+            'nome': nome,
+            'telefone': telefone,
+            'email': email
+        }, Cliente.cpf_cnpj == cpf_cnpj)
+        return jsonify({'message': 'Cliente atualizado com sucesso!'}), 200
+    return jsonify({'message': 'Cliente não encontrado!'}), 404
+
+# Rota para remover cliente
+@app.route('/remover_cliente', methods=['POST'])
+def remover_cliente():
+    cpf_cnpj = request.form.get('cpf_cnpj')
+
+    if cpf_cnpj:
+        Cliente = Query()
+        db.remove((Cliente.tipo == 'cliente') & (Cliente.cpf_cnpj == cpf_cnpj))
+        return jsonify({'message': 'Cliente removido com sucesso!'}), 200
+    return jsonify({'message': 'Falha ao remover cliente! Campos vazios.'}), 400
+
 # Rota para cadastrar pousadas
 @app.route('/cadastrar_pousada', methods=['POST'])
 def cadastrar_pousada():
     nome = request.form.get('nome')
-    pousada_id = request.form.get('id_pousada')  # Atualizado para 'id_pousada'
+    pousada_id = request.form.get('id_pousada')
+    valor = request.form.get('valor')
 
-    if nome and pousada_id:
+    if nome and pousada_id and valor:
         try:
-            db.insert({'tipo': 'pousada', 'nome': nome, 'id': pousada_id})  # Inserindo no banco de dados
+            db.insert({
+                'tipo': 'pousada',
+                'nome': nome,
+                'id': pousada_id,
+                'valor': valor,
+                'status': 'livre'  # Define como livre inicialmente
+            })
             return jsonify({'message': 'Pousada cadastrada com sucesso!'}), 200
         except Exception as e:
             return jsonify({'message': 'Falha ao cadastrar pousada!', 'error': str(e)}), 500
@@ -107,20 +143,41 @@ def listar_pousadas():
     pousadas = db.search(Pousada.tipo == 'pousada')
     return jsonify(pousadas), 200
 
+# Rota para editar pousada, incluindo o status
+@app.route('/editar_pousada', methods=['POST'])
+def editar_pousada():
+    pousada_id = request.form.get('id_pousada')
+    nome = request.form.get('nome')
+    valor = request.form.get('valor')
+    status = request.form.get('status')  # Captura o status atualizado
+
+    if pousada_id:
+        Pousada = Query()
+        db.update({
+            'nome': nome,
+            'valor': valor,
+            'status': status  # Atualiza o status
+        }, Pousada.id == pousada_id)
+        return jsonify({'message': 'Pousada atualizada com sucesso!'}), 200
+    return jsonify({'message': 'Pousada não encontrada!'}), 404
+
 # Rota para reservar pousada
 @app.route('/reservar_pousada', methods=['POST'])
 def reservar_pousada():
     cpf_cnpj = request.form.get('cpf_cnpj')
     pousada_id = request.form.get('pousada_id')
+    data_fim = request.form.get('data_fim')
 
     if cpf_cnpj and pousada_id:
-        # Verificar se a pousada já possui uma reserva
+        # Verifica se a pousada já está reservada
         reservas = db.search((Query().tipo == 'reserva') & (Query().pousada_id == pousada_id))
         if reservas:
             return jsonify({'message': 'Pousada já reservada!'}), 400
-        
-        # Adicionar reserva
-        db.insert({'tipo': 'reserva', 'cpf_cnpj': cpf_cnpj, 'pousada_id': pousada_id})
+
+        # Adiciona a reserva e atualiza o status da pousada para 'reservada'
+        db.insert({'tipo': 'reserva', 'cpf_cnpj': cpf_cnpj, 'pousada_id': pousada_id, 'data_fim': data_fim})
+        db.update({'status': 'reservada'}, Query().id == pousada_id)
+
         return jsonify({'message': 'Reserva feita com sucesso!'}), 200
     return jsonify({'message': 'Falha ao reservar pousada! Campos vazios.'}), 400
 
@@ -141,28 +198,11 @@ def listar_pousadas_reservadas():
                 'pousada_nome': pousada_detalhes['nome'],
                 'pousada_id': pousada_detalhes['id'],
                 'cliente_nome': cliente_detalhes['nome'],
-                'cliente_cpf_cnpj': cliente_detalhes['cpf_cnpj']
+                'cpf_cnpj': cliente_detalhes['cpf_cnpj'],
+                'data_fim': reserva.get('data_fim', 'Data não disponível')
             })
     
     return jsonify(pousadas_reservadas_info), 200
-
-@app.route('/listar_pousadas_livres', methods=['GET'])
-def listar_pousadas_livres():
-    reservas = db.all()
-    pousadas_reservadas = set()
-    
-    for reserva in reservas:
-        if reserva['tipo'] == 'reserva':
-            pousadas_reservadas.add(reserva['pousada_id'])
-    
-    pousadas_livres_info = []
-    pousadas = db.search(Query().tipo == 'pousada')
-    
-    for pousada in pousadas:
-        if pousada['id'] not in pousadas_reservadas:
-            pousadas_livres_info.append(pousada)
-    
-    return jsonify(pousadas_livres_info), 200
 
 # Rota para remover reserva
 @app.route('/remover_reserva', methods=['POST'])
@@ -172,12 +212,9 @@ def remover_reserva():
 
     if cpf_cnpj and pousada_id:
         Reserva = Query()
-        reserva = db.search((Reserva.tipo == 'reserva') & (Reserva.cpf_cnpj == cpf_cnpj) & (Reserva.pousada_id == pousada_id))
-        
-        if reserva:
-            db.remove((Reserva.tipo == 'reserva') & (Reserva.cpf_cnpj == cpf_cnpj) & (Reserva.pousada_id == pousada_id))
-            return jsonify({'message': 'Reserva removida com sucesso!'}), 200
-        return jsonify({'message': 'Reserva não encontrada!'}), 404
+        db.remove((Reserva.tipo == 'reserva') & (Reserva.cpf_cnpj == cpf_cnpj) & (Reserva.pousada_id == pousada_id))
+        db.update({'status': 'livre'}, Query().id == pousada_id)  # Define a pousada como "livre" após remoção da reserva
+        return jsonify({'message': 'Reserva removida com sucesso!'}), 200
     return jsonify({'message': 'Falha ao remover reserva! Campos vazios.'}), 400
 
 # Rota para logout
