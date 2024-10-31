@@ -10,6 +10,8 @@
 <body>
     <header>
         <h1>Gerenciamento de Pousadas</h1>
+        <!-- Div para mostrar mensagens de resultado -->
+        <div id="resultado" class="result-box"></div>
     </header>
 
     <main class="container">
@@ -23,11 +25,20 @@
             <button onclick="cadastrarCliente()">Cadastrar Cliente</button>
         </section>
 
+        <!-- Seção para cadastrar pousadas -->
+        <section class="form-section">
+            <h2>Cadastrar Pousada</h2>
+            <input type="text" id="id_pousada" placeholder="ID da Pousada">
+            <input type="text" id="nome_pousada" placeholder="Nome da Pousada">
+            <input type="text" id="valor_pousada" placeholder="Valor da Pousada" oninput="formatCurrencyMachineInput(this)">
+            <button onclick="cadastrarPousada()">Cadastrar Pousada</button>
+        </section>
+        
         <!-- Seção para listar e gerenciar clientes com pesquisa -->
         <section class="list-section">
             <h2>Clientes Cadastrados</h2>
             <input type="text" id="pesquisa_cliente" placeholder="Buscar por nome do cliente" oninput="filtrarClientes()">
-            <button onclick="listarClientes()">Listar Todos os Clientes</button>
+            <button id="botaoListarClientes" onclick="listarClientes()">Listar Todos os Clientes</button>
             <ul id="lista_clientes" class="hidden"></ul>
         </section>
 
@@ -41,29 +52,21 @@
             <button onclick="salvarEdicaoCliente()">Salvar Alterações</button>
         </div>
 
-        <!-- Seção para cadastrar pousadas -->
-        <section class="form-section">
-            <h2>Cadastrar Pousada</h2>
-            <input type="text" id="id_pousada" placeholder="ID da Pousada">
-            <input type="text" id="nome_pousada" placeholder="Nome da Pousada">
-            <input type="text" id="valor_pousada" placeholder="Valor da Pousada" oninput="formatCurrencyMachineInput(this)">
-            <button onclick="cadastrarPousada()">Cadastrar Pousada</button>
-        </section>
-
         <!-- Seção para listar e gerenciar pousadas com pesquisa e filtro -->
         <section class="list-section">
             <h2>Pousadas Cadastradas</h2>
-            <input type="text" id="pesquisa_pousada" placeholder="Buscar por nome da pousada" oninput="filtrarPousadas()">
+            <input type="text" id="pesquisa_pousada" placeholder="Buscar por nome da pousada">
             <label for="filtro_pousada">Filtrar por:</label>
-            <select id="filtro_pousada" onchange="listarPousadas()">
+            <select id="filtro_pousada">
                 <option value="todas">Todas</option>
                 <option value="livres">Livres</option>
                 <option value="reservadas">Reservadas</option>
             </select>
-            <button onclick="listarPousadas()">Listar Todas as Pousadas</button>
+            <button onclick="aplicarFiltroPousadas()">Aplicar Filtro</button>
+            <button id="botaoListarPousadas" onclick="listarPousadas()">Listar Todas as Pousadas</button>
             <ul id="lista_pousadas" class="hidden"></ul>
         </section>
-
+        
         <!-- Formulário para edição de pousada, incluindo status -->
         <div id="form_editar_pousada" class="hidden">
             <h3>Editar Pousada</h3>
@@ -77,9 +80,6 @@
             </select>
             <button onclick="salvarEdicaoPousada()">Salvar Alterações</button>
         </div>
-
-        <!-- Div para mostrar mensagens de resultado -->
-        <div id="resultado" class="result-box"></div>
     </main>
 </body>
 </html>

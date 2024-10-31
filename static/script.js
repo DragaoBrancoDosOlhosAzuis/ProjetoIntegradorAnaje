@@ -20,7 +20,7 @@ function cadastrarCliente() {
     .then(response => response.json())
     .then(data => {
         document.getElementById('resultado').innerText = data.message;
-        listarClientes();
+        listarClientes(); // Chama listar para atualizar a lista após cadastro
     })
     .catch(error => console.error('Erro:', error));
 }
@@ -45,48 +45,38 @@ function cadastrarPousada() {
     .then(response => response.json())
     .then(data => {
         document.getElementById('resultado').innerText = data.message;
-        listarPousadas();
+        listarPousadas(); // Chama listar para atualizar a lista após cadastro
     })
     .catch(error => console.error('Erro:', error));
 }
 
-// Função para reservar uma pousada
-function reservarPousada() {
-    const cpf_cnpj = document.getElementById('cpf_reserva').value;
-    const pousada_id = document.getElementById('id_pousada_reserva').value;
-    const data_fim = document.getElementById('data_fim_reserva').value;
-
-    fetch('/reservar_pousada', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-            'cpf_cnpj': cpf_cnpj,
-            'pousada_id': pousada_id,
-            'data_fim': data_fim
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('resultado').innerText = data.message;
-        listarPousadasReservadas();
-    })
-    .catch(error => console.error('Erro:', error));
+// Função para alternar o texto do botão entre "Listar" e "Ocultar"
+function alternarTextoBotao(botao, textoListar, textoOcultar, lista) {
+    if (lista.style.display === 'none' || lista.style.display === '') {
+        lista.style.display = 'block';
+        botao.textContent = textoOcultar;
+    } else {
+        lista.style.display = 'none';
+        botao.textContent = textoListar;
+    }
 }
 
-// Função para listar clientes com filtro de busca por nome
+// Função para exibir a lista explicitamente
+function exibirLista(lista, botao, textoOcultar) {
+    lista.style.display = 'block';
+    botao.textContent = textoOcultar;
+}
+
+// Função para listar clientes com alternância de exibição e texto do botão
 function listarClientes() {
+    const lista = document.getElementById('lista_clientes');
+    const botao = document.getElementById('botaoListarClientes');
+    
     fetch('/listar_clientes')
-    .then(response => response.json())
-    .then(data => {
-        // Filtra clientes com base na pesquisa
-        const pesquisa = document.getElementById('pesquisa_cliente').value.toLowerCase();
-        const lista = document.getElementById('lista_clientes');
-        lista.innerHTML = '';
-
-        data.forEach(cliente => {
-            if (cliente.nome.toLowerCase().includes(pesquisa)) {
+        .then(response => response.json())
+        .then(data => {
+            lista.innerHTML = '';
+            data.forEach(cliente => {
                 const li = document.createElement('li');
                 li.textContent = `${cliente.nome} - CPF/CNPJ: ${cliente.cpf_cnpj}`;
 
@@ -101,51 +91,26 @@ function listarClientes() {
                 li.appendChild(btnEditar);
                 li.appendChild(btnRemover);
                 lista.appendChild(li);
-            }
+            });
+            // Exibe a lista e define o texto para "Ocultar Clientes"
+            exibirLista(lista, botao, 'Ocultar Clientes');
         });
-        lista.style.display = 'block';
-    });
 }
 
-// Função para listar pousadas com filtro de busca por nome e status (livre/reservada)
+// Função para listar pousadas com alternância de exibição e texto do botão
 function listarPousadas() {
-    fetch('/listar_pousadas')
-    .then(response => response.json())
-    .then(pousadas => {
-        const lista = document.getElementById('lista_pousadas');
-        const filtroStatus = document.getElementById('filtro_pousada').value;
-        const pesquisa = document.getElementById('pesquisa_pousada').value.toLowerCase();
-        lista.innerHTML = '';
+    const lista = document.getElementById('lista_pousadas');
+    const botao = document.getElementById('botaoListarPousadas');
 
-        pousadas.forEach(pousada => {
-            // Aplica o filtro de status e pesquisa
-            const mostrarPousada = 
-                (filtroStatus === 'todas' ||
-                 (filtroStatus === 'livres' && pousada.status === 'livre') ||
-                 (filtroStatus === 'reservadas' && pousada.status === 'reservada')) &&
-                pousada.nome.toLowerCase().includes(pesquisa);
-
-            if (mostrarPousada) {
-                const li = document.createElement('li');
-                li.textContent = `${pousada.nome} - ID: ${pousada.id} - Valor: R$${pousada.valor}`;
-
-                const btnEditar = document.createElement('button');
-                btnEditar.textContent = 'Editar';
-                btnEditar.onclick = () => exibirFormularioEdicaoPousada(pousada);
-
-                const btnRemover = document.createElement('button');
-                btnRemover.textContent = 'Remover';
-                btnRemover.onclick = () => confirmarRemoverPousada(pousada);
-
-                li.appendChild(btnEditar);
-                li.appendChild(btnRemover);
-                lista.appendChild(li);
-            }
-        });
+    if (lista.style.display === 'block') {
+        lista.style.display = 'none';
+        botao.textContent = 'Listar Todas as Pousadas';
+    } else {
         lista.style.display = 'block';
-    });
+        botao.textContent = 'Ocultar Pousadas';
+        aplicarFiltroPousadas(); // Aplica o filtro ao listar todas as pousadas
+    }
 }
-
 // Funções para filtrar clientes e pousadas conforme o usuário digita
 function filtrarClientes() {
     listarClientes();
@@ -175,7 +140,7 @@ function removerCliente(cpf_cnpj) {
     .then(response => response.json())
     .then(data => {
         document.getElementById('resultado').innerText = data.message;
-        listarClientes();
+        listarClientes(); // Atualiza a lista após remoção
     })
     .catch(error => console.error('Erro:', error));
 }
@@ -199,7 +164,7 @@ function removerPousada(id_pousada) {
     .then(response => response.json())
     .then(data => {
         document.getElementById('resultado').innerText = data.message;
-        listarPousadas();
+        listarPousadas(); // Atualiza a lista após remoção
     })
     .catch(error => console.error('Erro:', error));
 }
@@ -227,7 +192,7 @@ function salvarEdicaoCliente() {
     .then(data => {
         document.getElementById('resultado').innerText = data.message;
         document.getElementById('form_editar_cliente').style.display = 'none';
-        listarClientes();
+        listarClientes(); // Atualiza a lista após edição
     })
     .catch(error => console.error('Erro:', error));
 }
@@ -255,20 +220,10 @@ function salvarEdicaoPousada() {
     .then(data => {
         document.getElementById('resultado').innerText = data.message;
         document.getElementById('form_editar_pousada').style.display = 'none';
-        listarPousadas();
+        listarPousadas(); // Atualiza a lista após edição
     })
     .catch(error => console.error('Erro:', error));
 }
-
-// Função para exibir o formulário de edição com o status atual da pousada
-function exibirFormularioEdicaoPousada(pousada) {
-    document.getElementById('form_editar_pousada').style.display = 'block';
-    document.getElementById('editar_id_pousada').value = pousada.id;
-    document.getElementById('editar_nome_pousada').value = pousada.nome;
-    document.getElementById('editar_valor_pousada').value = pousada.valor;
-    document.getElementById('editar_status_pousada').value = pousada.status || 'livre'; // Define o status atual ou "livre" por padrão
-}
-
 
 // Funções para exibir formulários de edição
 function exibirFormularioEdicaoCliente(cliente) {
@@ -284,17 +239,56 @@ function exibirFormularioEdicaoPousada(pousada) {
     document.getElementById('editar_id_pousada').value = pousada.id;
     document.getElementById('editar_nome_pousada').value = pousada.nome;
     document.getElementById('editar_valor_pousada').value = pousada.valor;
+    document.getElementById('editar_status_pousada').value = pousada.status || 'livre';
 }
+
+// Função para aplicar o filtro de pousadas sem alternar a visibilidade
+function aplicarFiltroPousadas() {
+    const lista = document.getElementById('lista_pousadas');
+    const filtroStatus = document.getElementById('filtro_pousada').value;
+    const pesquisa = document.getElementById('pesquisa_pousada').value.toLowerCase();
+
+    // Limpa a lista antes de aplicar o filtro
+    lista.innerHTML = '';
+
+    fetch('/listar_pousadas')
+        .then(response => response.json())
+        .then(pousadas => {
+            pousadas.forEach(pousada => {
+                // Aplica o filtro de status e pesquisa
+                const mostrarPousada = 
+                    (filtroStatus === 'todas' ||
+                     (filtroStatus === 'livres' && pousada.status === 'livre') ||
+                     (filtroStatus === 'reservadas' && pousada.status === 'reservada')) &&
+                    pousada.nome.toLowerCase().includes(pesquisa);
+
+                if (mostrarPousada) {
+                    const li = document.createElement('li');
+                    li.textContent = `${pousada.nome} - ID: ${pousada.id} - Valor: R$${pousada.valor}`;
+
+                    const btnEditar = document.createElement('button');
+                    btnEditar.textContent = 'Editar';
+                    btnEditar.onclick = () => exibirFormularioEdicaoPousada(pousada);
+
+                    const btnRemover = document.createElement('button');
+                    btnRemover.textContent = 'Remover';
+                    btnRemover.onclick = () => confirmarRemoverPousada(pousada);
+
+                    li.appendChild(btnEditar);
+                    li.appendChild(btnRemover);
+                    lista.appendChild(li);
+                }
+            });
+
+            // Exibe a lista após aplicar o filtro
+            lista.style.display = 'block';
+        });
+}
+
 
 // Função para formatar o valor da pousada
 function formatCurrencyMachineInput(input) {
-    let value = input.value.replace(/\D/g, ""); // Remove qualquer caractere não numérico
-    value = (parseInt(value) / 100).toFixed(2); // Divide por 100 para adicionar a vírgula
-    input.value = value.replace(".", ","); // Substitui ponto por vírgula para formato brasileiro
-}
-
-// Função para ocultar e exibir listas
-function ocultarTabela(idTabela) {
-    const lista = document.getElementById(idTabela);
-    lista.style.display = (lista.style.display === 'none') ? 'block' : 'none';
+    let value = input.value.replace(/\D/g, "");
+    value = (parseInt(value) / 100).toFixed(2);
+    input.value = value.replace(".", ",");
 }
